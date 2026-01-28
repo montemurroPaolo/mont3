@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speculative DeFi Liquidity | THETA_VAULT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600&family=Space+Grotesk:wght@300;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --fg: #ffffff;
+            --dim: #444444;
+            --accent: #8b5cf6;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.04em;
+        }
+
+        .mono {
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Custom Cursor */
+        #cursor {
+            width: 20px;
+            height: 20px;
+            border: 1px solid white;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+        
+        #cursor.hovered {
+            background-color: white;
+            transform: scale(2.5);
+            mix-blend-mode: exclusion;
+        }
+
+        /* Grain Overlay */
+        .grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            z-index: 90;
+        }
+
+        /* Grid Background */
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px white;
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .metric-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: white;
+        }
+
+        /* Marquee / Scrolling Keywords */
+        .keyword-scroll {
+            display: flex;
+            gap: 2rem;
+            animation: scrollLeft 15s linear infinite;
+        }
+        
+        @keyframes scrollLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .bento-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .bento-box:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body class="grid-bg">
+    <!-- Degen Mode Toggle -->
+    <button id="degen-btn" class="fixed top-24 right-6 md:right-12 z-50 border border-red-500 text-red-500 px-6 py-3 text-xs md:text-sm hover:bg-red-500 hover:text-black transition-all duration-300 cursor-pointer font-bold mono bg-black/90 backdrop-blur-md tracking-widest shadow-[0_0_20px_rgba(220,38,38,0.2)] scale-100 hover:scale-105">
+        💀 DEGEN_MODE
+    </button>
+
+
+    <!-- Custom Cursor -->
+    <div id="cursor"></div>
+    <div class="grain"></div>
+
+        <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 w-full z-50 border-b border-white/20 bg-black transition-all duration-300">
+        <!-- Background Canvas -->
+        <canvas id="navCanvas" class="absolute top-0 left-0 w-full h-full opacity-40 pointer-events-none"></canvas>
+        
+        <!-- Content -->
+        <div class="relative z-10 flex justify-between items-center px-6 py-4">
+            <div class="flex items-center hover-trigger group cursor-pointer" onclick="window.location.href='index.html'">
+                <!-- Logo: Theta in Vault (Brutalist) -->
+                <svg class="w-8 h-8 mr-3 text-white transition-transform group-hover:scale-110 duration-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Outer Vault Shell -->
+                    <path d="M2 2h20v20H2V2z" stroke="currentColor" stroke-width="2"/>
+                    <!-- Inner Geometric Theta -->
+                    <rect x="7" y="7" width="10" height="10" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <div class="text-xl font-bold tracking-tighter mono text-white border border-transparent group-hover:border-white/50 p-1 transition-all">THETA_VAULT</div>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm mono text-white">
+                <a href="index.html#strategies" class="hover:bg-white hover:text-black px-2 py-1 transition-none hover-trigger border border-transparent hover:border-white">STRATEGIES</a>
+                <a href="index.html#fee-structure" class="hover:bg-white hover:text-black px-2 py-1 transition-none hover-trigger border border-transparent hover:border-white">HOW IT WORKS</a>
+                <a href="index.html#advisory" class="hover:bg-white hover:text-black px-2 py-1 transition-none hover-trigger border border-transparent hover:border-white">ADVISORY</a>
+            </div>
+            <a href="index.html#contact" class="border border-white bg-black px-6 py-2 text-xs font-bold tracking-widest text-white hover:bg-white hover:text-black transition-none hover-trigger uppercase">GET IN TOUCH</a>
+        </div>
+        
+        <!-- Brutalist Bottom Border Element -->
+        <div class="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 flex justify-between">
+            <div class="w-2 h-2 bg-white translate-y-[3px]"></div>
+            <div class="w-2 h-2 bg-white translate-y-[3px]"></div>
+        </div>
+    </nav>
+
+    <main class="pt-32 px-6 md:px-12 min-h-screen pb-24">
+        
+        <!-- Header -->
+        <header class="mb-12 fade-in-up delay-100">
+            <div class="flex items-center gap-4 mb-4">
+                <a href="index.html#strategies" class="mono text-xs text-gray-500 hover:text-white hover-trigger"><< RETURN_TO_GRID</a>
+                <span class="mono text-xs text-gray-600">|</span>
+                <span class="mono text-xs text-violet-500">STATUS: ACTIVE</span>
+            </div>
+            <h1 class="text-4xl md:text-7xl font-bold uppercase leading-none">Speculative DeFi<br>Liquidity</h1>
+            
+            <!-- Dynamic Keywords Scrolling -->
+            <div class="mt-8 overflow-hidden border-y border-white/10 py-3 bg-black/50">
+                <div class="keyword-scroll mono text-sm text-gray-400 whitespace-nowrap">
+                    <span>UNISWAP_V3</span> <span>+++</span> <span>CONCENTRATED_LIQUIDITY</span> <span>+++</span> <span>EXOTIC_PAIRS</span> <span>+++</span> <span>UNISWAP_V3</span> <span>+++</span> <span>CONCENTRATED_LIQUIDITY</span> <span>+++</span> <span>EXOTIC_PAIRS</span> <span>+++</span> <span>UNISWAP_V3</span> <span>+++</span> <span>CONCENTRATED_LIQUIDITY</span> <span>+++</span> <span>EXOTIC_PAIRS</span> <span>+++</span> <span>UNISWAP_V3</span> <span>+++</span> <span>CONCENTRATED_LIQUIDITY</span> <span>+++</span> <span>EXOTIC_PAIRS</span> <span>+++</span> <span>UNISWAP_V3</span> <span>+++</span> <span>CONCENTRATED_LIQUIDITY</span> <span>+++</span> <span>EXOTIC_PAIRS</span> <span>+++</span> 
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Main Content (Left - Bento Grid Style) -->
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 fade-in-up delay-200">
+                
+                <!-- Synopsis Box -->
+                <div class="md:col-span-2 bento-box hover-trigger">
+                    <h3 class="text-xs mono text-gray-500 mb-4">CORE_MECHANIC</h3>
+                    <p class="text-xl md:text-2xl font-bold leading-tight">
+                        Participating in high APR pools (SOL/USDC >30%) on <span class='text-gray-500'>main exchangers</span> (BNB, ETH).
+                    </p>
+                </div>
+
+                <!-- Key Feature 1 -->
+                <div class="bento-box hover-trigger flex flex-col justify-between h-48">
+                    <div class="mono text-xs text-gray-500">VECTOR_01</div>
+                    <div class="text-xl font-bold">High APR Pools</div>
+                    <div class="w-full h-1 bg-gray-800 mt-4"><div class="h-full bg-white w-3/4"></div></div>
+                </div>
+
+                <!-- Key Feature 2 -->
+                <div class="bento-box hover-trigger flex flex-col justify-between h-48">
+                    <div class="mono text-xs text-gray-500">VECTOR_02</div>
+                    <div class="text-xl font-bold">Long Term Exposure</div>
+                    <div class="flex gap-1 mt-4">
+                        <div class="w-2 h-2 bg-violet-500 animate-pulse"></div>
+                        <div class="w-2 h-2 bg-violet-500 animate-pulse delay-75"></div>
+                        <div class="w-2 h-2 bg-violet-500 animate-pulse delay-150"></div>
+                    </div>
+                </div>
+
+                <!-- STRATEGY PHILOSOPHY & VECTORS -->
+                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Philosophy (Hover Reveal) -->
+                    <div class="md:col-span-2 bento-box group relative overflow-hidden min-h-[200px] flex items-center justify-center text-center hover-trigger">
+                        <!-- Idle State -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 group-hover:opacity-0 p-6">
+                            <h3 class="text-xl font-bold tracking-widest">STRATEGY_PHILOSOPHY</h3>
+                            <div class="mt-2 p-2 border border-white/20 rounded-full animate-pulse">
+                                <span class="text-xl">🔒</span>
+                            </div>
+                            <p class="text-[10px] mono text-gray-500 mt-2">[HOVER_TO_DECRYPT]</p>
+                        </div>
+                        <!-- Hover State -->
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-500 absolute inset-0 bg-black/95 p-8 flex flex-col justify-center items-center text-center border border-white/10">
+                             <div class="text-4xl text-gray-700 mb-4">❝</div>
+                             <p class="text-lg md:text-xl text-gray-200 leading-relaxed font-light italic">
+                                "We accept the risk of impermanent loss in exchange for exceptional yields on assets we already want to hold long term."
+                            </p>
+                            <div class="w-12 h-[1px] bg-white/30 my-4"></div>
+                            <p class="text-xs mono text-gray-500 uppercase tracking-widest">
+                                LONG TERM COMPOUNDING.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Main Risks -->
+                    <div class="bento-box hover-trigger border-l-2 border-l-red-500">
+                        <h3 class="text-xs mono text-red-400 mb-3 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> MAIN_RISKS
+                        </h3>
+                        <ul class="text-xs text-gray-400 space-y-2 font-mono">
+                            <li class='flex gap-2'><span>></span> Impermanent Loss</li><li class='flex gap-2'><span>></span> Smart Contract Risk</li><li class='flex gap-2'><span>></span> Token volatility</li>
+                        </ul>
+                    </div>
+
+                    <!-- Main Opportunities -->
+                    <div class="bento-box hover-trigger border-l-2 border-l-green-500">
+                        <h3 class="text-xs mono text-green-400 mb-3 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> UPSIDE_VECTORS
+                        </h3>
+                        <ul class="text-xs text-gray-400 space-y-2 font-mono">
+                            <li class='flex gap-2'><span>></span> High APR (>30%)</li><li class='flex gap-2'><span>></span> Long term asset growth</li><li class='flex gap-2'><span>></span> Real yield</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <!-- Terminal Animation (Full Width in Grid) -->
+                <div class="md:col-span-2 border border-white/20 bg-black relative h-[300px] overflow-hidden group mt-4">
+                    <div class="absolute top-2 left-2 text-[10px] mono text-gray-500 z-20">SIMULATION_VISUALIZER_V1.0</div>
+                    <div class="scan-line"></div>
+                    <canvas id="stratCanvas" class="w-full h-full opacity-80"></canvas>
+                    <div class="absolute bottom-0 left-0 w-full p-2 bg-black/80 backdrop-blur-sm border-t border-white/10 flex justify-between items-center">
+                        <div class="mono text-[10px] text-violet-500 typing-effect">>> MONITORING_LIVE_FEED...</div>
+                        <div class="mono text-[10px] text-gray-500 animate-pulse">● ONLINE</div>
+                    </div>
+                </div>
+
+                <!-- Target Profile (Visual) - MOVED TO BOTTOM -->
+                <div class="md:col-span-2 bento-box hover-trigger">
+                    <h3 class="text-xs mono text-gray-500 mb-6">TARGET_ALLOCATORS</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-4 border border-white/10 hover:bg-white hover:text-black transition duration-300">
+                            <div class="text-2xl mb-2">🏛️</div>
+                            <div class="text-xs mono font-bold">INSTITUTIONAL</div>
+                        </div>
+                        <div class="text-center p-4 border border-white/10 hover:bg-white hover:text-black transition duration-300">
+                            <div class="text-2xl mb-2">🤵</div>
+                            <div class="text-xs mono font-bold">FAMILY OFFICE</div>
+                        </div>
+                        <div class="text-center p-4 border border-white/10 hover:bg-white hover:text-black transition duration-300">
+                            <div class="text-2xl mb-2">💎</div>
+                            <div class="text-xs mono font-bold">HNWI</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Metrics Sidebar (Right - Sticky) -->
+            <div class="lg:col-span-1 fade-in-up delay-300">
+                <div class="sticky top-32 space-y-6">
+                    
+                    <!-- Main Metric Big Box -->
+                    <div class="bg-white text-black p-6 bento-box border-transparent">
+                        <div class="text-xs mono mb-2 opacity-60">ESTIMATED_YIELD</div>
+                        <div class="text-5xl font-bold tracking-tighter">62.0%</div>
+                        <div class="mt-4 text-xs mono border-t border-black/10 pt-2 flex justify-between">
+                            <span>LAST_UPDATED</span>
+                            <span>24H AGO</span>
+                        </div>
+                    </div>
+
+                    <!-- Other Metrics Grid -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bento-box hover-trigger">
+                            <div class="text-[10px] mono text-gray-500 mb-2">MAX_DRAWDOWN</div>
+                            <div class="text-2xl font-bold text-red-400">-20.0%</div>
+                        </div>
+                        <div class="bento-box hover-trigger">
+                            <div class="text-[10px] mono text-gray-500 mb-2">RISK_SCORE</div>
+                            <div class="text-2xl font-bold">7/10</div>
+                        </div>
+                        <div class="col-span-2 bento-box hover-trigger flex justify-between items-center">
+                            <div class="text-[10px] mono text-gray-500">MIN_ALLOCATION</div>
+                            <div class="text-xl font-bold">10k CHF</div>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    <a href="mailto:contact@thetavault.com?subject=Inquiry: Speculative DeFi Liquidity" class="block w-full bg-transparent text-white border border-white text-center py-6 font-bold mono hover:bg-white hover:text-black transition-all hover-trigger tracking-widest text-sm group relative overflow-hidden">
+                        <span class="relative z-10">REQUEST FACTSHEET</span>
+                        <div class="absolute top-0 left-0 w-full h-full bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out -z-0"></div>
+                    </a>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- DEGEN MODE WARNING MODAL -->
+    <div id="degen-modal" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="border border-red-500 bg-black max-w-lg w-full relative shadow-[0_0_30px_rgba(220,38,38,0.3)] animate-in fade-in zoom-in duration-300">
+            <!-- Corner Accents -->
+            <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-red-500"></div>
+            <div class="absolute top-0 right-0 w-2 h-2 border-t border-r border-red-500"></div>
+            <div class="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-red-500"></div>
+            <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-red-500"></div>
+
+            <!-- Header -->
+            <div class="bg-red-500/10 border-b border-red-500/30 p-4 flex items-center gap-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <h3 class="font-mono font-bold text-red-500 tracking-widest text-sm">SYSTEM_OVERRIDE :: WARNING</h3>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8 space-y-6">
+                <div class="font-mono text-xs text-red-400 border-l-2 border-red-500/50 pl-4 py-1">
+                    ALERT CODE: DGN-404
+                </div>
+                
+                <p class="font-mono text-sm text-gray-300 leading-relaxed">
+                    You are about to activate <span class="text-white font-bold">DEGEN MODE</span>.
+                    <br><br>
+                    This interface contains <span class="text-red-400">SATIRICAL CONTENT</span> designed for entertainment purposes only. It reflects the "worst-case" scenarios and degen psychology.
+                    <br><br>
+                    For actual risk parameters and strategy mechanics, please remain in NORMIE_MODE.
+                </p>
+
+                <!-- Actions -->
+                <div class="flex gap-4 pt-4">
+                    <button id="degen-cancel" class="flex-1 border border-white/20 py-3 font-mono text-xs text-gray-500 hover:text-white hover:border-white transition-colors">
+                        ABORT
+                    </button>
+                    <button id="degen-proceed" class="flex-1 bg-red-500 text-black font-bold py-3 font-mono text-xs hover:bg-white hover:text-black transition-colors tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.4)]">
+                        I UNDERSTAND >>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CUSTOM CURSOR ---
+        const cursor = document.getElementById('cursor');
+        const hoverTriggers = document.querySelectorAll('.hover-trigger');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        hoverTriggers.forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+            trigger.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+        });
+
+        // --- ANIMATIONS ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.fade-in-up').forEach((el) => observer.observe(el));
+
+        // --- CANVAS ANIMATION SELECTION ---
+        const canvas = document.getElementById('stratCanvas');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+        
+        function resize() {
+            if(canvas.parentElement) {
+                w = canvas.parentElement.clientWidth;
+                h = canvas.parentElement.clientHeight;
+                canvas.width = w;
+                canvas.height = h;
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const animType = "liquidity";
+
+        // ANIMATION LOGIC
+        let frame = 0;
+        
+        // Variables for specific animations
+        let particles = [];
+        let chartData = [];
+        for(let i=0; i<50; i++) chartData.push(Math.random() * 0.5 + 0.25);
+
+        // Init particles
+        for(let i=0; i<50; i++) {
+            particles.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                size: Math.random() * 3
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Trail effect
+            ctx.fillRect(0, 0, w, h);
+            
+            frame++;
+            
+            if(animType === 'growth') {
+                // STEADY GROWTH (Green lines going up)
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for(let i=0; i<w; i+=10) {
+                    let y = h - (i * 0.5) - (Math.sin((i + frame) * 0.05) * 20) - 50;
+                    if(i===0) ctx.moveTo(i, y);
+                    else ctx.lineTo(i, y);
+                }
+                ctx.stroke();
+                
+                // Grid blocks rising
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+                for(let i=0; i<10; i++) {
+                    let hBar = (Math.sin((frame * 0.02) + i) + 1) * 50 + 20;
+                    ctx.fillRect(i * (w/10) + 10, h - hBar, (w/10) - 20, hBar);
+                }
+
+            } else if(animType === 'neutral') {
+                // DELTA NEUTRAL (Two lines canceling)
+                ctx.lineWidth = 2;
+                
+                // Line 1 (Asset) - Cyan
+                ctx.strokeStyle = '#00ffff';
+                ctx.beginPath();
+                for(let i=0; i<w; i+=5) {
+                    let y = h/2 + Math.sin((i + frame) * 0.02) * 100;
+                    if(i===0) ctx.moveTo(i, y);
+                    else ctx.lineTo(i, y);
+                }
+                ctx.stroke();
+
+                // Line 2 (Short) - Redish/Magenta
+                ctx.strokeStyle = '#ff00ff';
+                ctx.beginPath();
+                for(let i=0; i<w; i+=5) {
+                    let y = h/2 - Math.sin((i + frame) * 0.02) * 100; // Inverse
+                    if(i===0) ctx.moveTo(i, y);
+                    else ctx.lineTo(i, y);
+                }
+                ctx.stroke();
+
+                // Net Equity - Green straight line with slight noise
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                let startY = h/2;
+                ctx.moveTo(0, startY);
+                ctx.lineTo(w, startY - (w * 0.1)); // Slight profit slope
+                ctx.stroke();
+            } else if(animType === 'options') {
+                // OPTIONS (Bell curve / Probability)
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                let center = w/2;
+                let sigma = w/6 + Math.sin(frame * 0.05) * 20; // Breathing volatility
+                for(let i=0; i<w; i+=5) {
+                    let x = i;
+                    let y = h - (Math.exp(-Math.pow(x - center, 2) / (2 * Math.pow(sigma, 2))) * h * 0.8);
+                    if(i===0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                
+                // Fill area
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.fill();
+
+            } else if(animType === 'liquidity') {
+                // LIQUIDITY (Particles flowing between bars)
+                ctx.fillStyle = '#ffffff';
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if(p.x < 0 || p.x > w) p.vx *= -1;
+                    if(p.y < 0 || p.y > h) p.vy *= -1;
+                    
+                    // Draw connections
+                    particles.forEach(p2 => {
+                        let dx = p.x - p2.x;
+                        let dy = p.y - p2.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist < 50) {
+                            ctx.strokeStyle = `rgba(255,255,255,${1 - dist/50})`;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    });
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fill();
+                });
+
+            } else if(animType === 'volatile') {
+                // VOLATILE (Spikes and crashes)
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for(let i=0; i<w; i+=2) {
+                    // Random walk
+                    let noise = (Math.random() - 0.5) * 50;
+                    let y = h/2 + noise;
+                    if(i % 100 < 50) y += Math.sin(i*0.1)*50; // Big waves
+                    if(i===0) ctx.moveTo(i, y);
+                    else ctx.lineTo(i, y);
+                }
+                ctx.stroke();
+
+                // Flash effect
+                if(Math.random() > 0.95) {
+                    ctx.fillStyle = 'rgba(255,0,0,0.1)';
+                    ctx.fillRect(0,0,w,h);
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+
+    <script>
+        // DEGEN MODE LOGIC
+        const degenBtn = document.getElementById('degen-btn');
+        const degenModal = document.getElementById('degen-modal');
+        const degenProceed = document.getElementById('degen-proceed');
+        const degenCancel = document.getElementById('degen-cancel');
+        let isDegen = false;
+
+        // Original Content Storage
+        const els = {
+            mechanic: document.querySelector('.md\\:col-span-2.bento-box p'),
+            philosophy: document.querySelector('.group-hover\\:opacity-100 p.italic'),
+            risksHeader: document.querySelector('.border-l-red-500 h3'),
+            risksList: document.querySelector('.border-l-red-500 ul'),
+            upsidesHeader: document.querySelector('.border-l-green-500 h3'),
+            upsidesList: document.querySelector('.border-l-green-500 ul')
+        };
+
+        // Store original HTML
+        const originals = {
+            mechanic: els.mechanic.innerHTML,
+            philosophy: els.philosophy.innerHTML,
+            risksList: els.risksList.innerHTML,
+            upsidesHeader: els.upsidesHeader.innerHTML,
+            upsidesList: els.upsidesList.innerHTML
+        };
+
+        // Degen Content
+        const degenContent = {
+            mechanic: `"Provide exit liquidity for rug pulls. Experience 100% impermanent loss where it becomes permanent."`,
+            philosophy: `"We sit at the toll booth of a bridge that leads to a cliff. We collect fees while falling."`,
+            risksList: `"100% IL", "Dev dumping tokens", "Vampire attack"`.split(', ').map(r => `<li class='flex gap-2'><span>></span> ${r}</li>`).join(''),
+            upsidesHeader: `<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> DOWNSIDE_VECTORS`,
+            upsidesList: `"Holding worthless farm tokens", "Providing exit liquidity", "Being the yield"`.split(', ').map(u => `<li class='flex gap-2'><span>></span> ${u}</li>`).join('')
+        };
+        
+        // --- MODAL HANDLERS ---
+        degenBtn.addEventListener('click', () => {
+            if (!isDegen) {
+                if(degenModal) {
+                    degenModal.classList.remove('hidden');
+                } else {
+                    console.error('degenModal not found');
+                    // Fallback if modal fails for some reason
+                    if(confirm("WARNING: DEGEN MODE is satirical. Continue?")) {
+                        toggleDegen();
+                    }
+                }
+            } else {
+                toggleDegen();
+            }
+        });
+
+        if(degenCancel) {
+            degenCancel.addEventListener('click', () => {
+                degenModal.classList.add('hidden');
+            });
+        }
+
+        if(degenProceed) {
+            degenProceed.addEventListener('click', () => {
+                degenModal.classList.add('hidden');
+                toggleDegen();
+            });
+        }
+
+        function toggleDegen() {
+            isDegen = !isDegen;
+            
+            if(isDegen) {
+                degenBtn.innerText = "😇 NORMIE_MODE";
+                degenBtn.classList.remove('border-red-500', 'text-red-500', 'hover:bg-red-500');
+                degenBtn.classList.add('border-emerald-500', 'text-emerald-500', 'hover:bg-emerald-500');
+                
+                // Apply Degen Content
+                els.mechanic.innerHTML = degenContent.mechanic;
+                els.philosophy.innerHTML = degenContent.philosophy;
+                els.risksList.innerHTML = degenContent.risksList;
+                
+                // Flip colors
+                els.upsidesHeader.parentElement.classList.replace('border-l-green-500', 'border-l-red-500');
+                els.upsidesHeader.classList.replace('text-green-400', 'text-red-400');
+                els.upsidesHeader.innerHTML = degenContent.upsidesHeader;
+                els.upsidesList.innerHTML = degenContent.upsidesList;
+
+            } else {
+                degenBtn.innerText = "💀 DEGEN_MODE";
+                degenBtn.classList.add('border-red-500', 'text-red-500', 'hover:bg-red-500');
+                degenBtn.classList.remove('border-emerald-500', 'text-emerald-500', 'hover:bg-emerald-500');
+
+                // Restore Originals
+                els.mechanic.innerHTML = originals.mechanic;
+                els.philosophy.innerHTML = originals.philosophy;
+                els.risksList.innerHTML = originals.risksList;
+                
+                // Restore colors
+                els.upsidesHeader.parentElement.classList.replace('border-l-red-500', 'border-l-green-500');
+                els.upsidesHeader.classList.replace('text-red-400', 'text-green-400');
+                els.upsidesHeader.innerHTML = originals.upsidesHeader;
+                els.upsidesList.innerHTML = originals.upsidesList;
+            }
+        }
+    </script>
+
+    <script>
+        // 6. NAV BACKGROUND ANIMATION
+        const navCanvas = document.getElementById('navCanvas');
+        // Only run if element exists
+        if(navCanvas) {
+            const navCtx = navCanvas.getContext('2d');
+            let navW, navH;
+            let navPriceHistory = [];
+            let navCurrentPrice = 0.5;
+            let navFlashIntensity = 0;
+
+            function resizeNavCanvas() {
+                navW = navCanvas.parentElement.clientWidth;
+                navH = navCanvas.parentElement.clientHeight;
+                navCanvas.width = navW;
+                navCanvas.height = navH;
+                navPriceHistory = [];
+                navCurrentPrice = 0.5;
+            }
+            window.addEventListener('resize', resizeNavCanvas);
+            resizeNavCanvas();
+
+            function animateNav() {
+                navCtx.clearRect(0, 0, navW, navH);
+                
+                // Grid Background
+                navCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                navCtx.lineWidth = 1;
+                navCtx.beginPath();
+                for(let i=0; i<navW; i+=40) {
+                    navCtx.moveTo(i, 0);
+                    navCtx.lineTo(i, navH);
+                }
+                navCtx.stroke();
+
+                // Update Price - More Drastic Movement
+                navCurrentPrice += (Math.random() - 0.5) * 0.08;
+                // Keep within bounds with simple mean reversion
+                if(navCurrentPrice < 0.2) navCurrentPrice += 0.03;
+                if(navCurrentPrice > 0.8) navCurrentPrice -= 0.03;
+                
+                navPriceHistory.push(navCurrentPrice);
+                // Keep full width history
+                if(navPriceHistory.length > navW) navPriceHistory.shift();
+
+                // Draw Line
+                navCtx.beginPath();
+                navCtx.strokeStyle = '#ffffff';
+                navCtx.lineWidth = 1.5;
+                
+                // Map history to canvas coordinates
+                for(let i = 0; i < navPriceHistory.length; i++) {
+                    const x = i + (navW - navPriceHistory.length); // Align to right
+                    const y = (1 - navPriceHistory[i]) * navH; 
+                    if(i === 0) navCtx.moveTo(x, y);
+                    else navCtx.lineTo(x, y);
+                }
+                navCtx.stroke();
+
+                // Scanline (Bright Light)
+                const time = Date.now() * 0.002;
+                const scanY = (Math.sin(time) * 0.5 + 0.5) * navH;
+                
+                // Glow effect for scanline
+                navCtx.shadowBlur = 15;
+                navCtx.shadowColor = "rgba(255, 255, 255, 0.8)";
+                navCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                navCtx.fillRect(0, scanY, navW, 1);
+                navCtx.shadowBlur = 0; // Reset shadow
+
+                // Flash Event Logic
+                if(Math.random() > 0.98) {
+                    navFlashIntensity = 1;
+                }
+
+                // Draw Flash
+                if(navFlashIntensity > 0.01) {
+                    navCtx.fillStyle = `rgba(255, 255, 255, ${navFlashIntensity * 0.15})`;
+                    navCtx.fillRect(0, 0, navW, navH);
+                    navFlashIntensity *= 0.9;
+                } else {
+                    navFlashIntensity = 0;
+                }
+
+                requestAnimationFrame(animateNav);
+            }
+            animateNav();
+        }
+    </script>
+
+</body>
+</html>

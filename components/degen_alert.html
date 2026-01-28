@@ -1,0 +1,41 @@
+<!-- DEGEN MODE WARNING MODAL -->
+<div id="degen-modal" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+    <div class="border border-red-500 bg-black max-w-lg w-full relative shadow-[0_0_30px_rgba(220,38,38,0.3)] animate-in fade-in zoom-in duration-300">
+        <!-- Corner Accents -->
+        <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-red-500"></div>
+        <div class="absolute top-0 right-0 w-2 h-2 border-t border-r border-red-500"></div>
+        <div class="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-red-500"></div>
+        <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-red-500"></div>
+
+        <!-- Header -->
+        <div class="bg-red-500/10 border-b border-red-500/30 p-4 flex items-center gap-3">
+            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            <h3 class="font-mono font-bold text-red-500 tracking-widest text-sm">SYSTEM_OVERRIDE :: WARNING</h3>
+        </div>
+
+        <!-- Content -->
+        <div class="p-8 space-y-6">
+            <div class="font-mono text-xs text-red-400 border-l-2 border-red-500/50 pl-4 py-1">
+                ALERT CODE: DGN-404
+            </div>
+            
+            <p class="font-mono text-sm text-gray-300 leading-relaxed">
+                You are about to activate <span class="text-white font-bold">DEGEN MODE</span>.
+                <br><br>
+                This interface contains <span class="text-red-400">SATIRICAL CONTENT</span> designed for entertainment purposes only. It reflects the "worst-case" scenarios and degen psychology.
+                <br><br>
+                For actual risk parameters and strategy mechanics, please remain in NORMIE_MODE.
+            </p>
+
+            <!-- Actions -->
+            <div class="flex gap-4 pt-4">
+                <button id="degen-cancel" class="flex-1 border border-white/20 py-3 font-mono text-xs text-gray-500 hover:text-white hover:border-white transition-colors">
+                    ABORT
+                </button>
+                <button id="degen-proceed" class="flex-1 bg-red-500 text-black font-bold py-3 font-mono text-xs hover:bg-white hover:text-black transition-colors tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.4)]">
+                    I UNDERSTAND >>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

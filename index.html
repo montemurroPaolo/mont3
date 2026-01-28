@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THETA_VAULT | Strategic Alpha</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600&family=Space+Grotesk:wght@300;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --fg: #ffffff;
+            --dim: #444444;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.04em;
+        }
+
+        .mono {
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Custom Cursor */
+        #cursor {
+            width: 20px;
+            height: 20px;
+            border: 1px solid white;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+        
+        #cursor.hovered {
+            background-color: white;
+            transform: scale(2.5);
+            mix-blend-mode: exclusion;
+        }
+
+        /* Grain Overlay */
+        .grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            z-index: 90;
+        }
+
+        /* Grid Background */
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Animations */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 0.5rem 0;
+            background: black;
+        }
+
+        .ticker {
+            display: inline-block;
+            animation: marquee 60s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .card-hover {
+            transition: all 0.4s ease;
+        }
+        .card-hover:hover {
+            background: white;
+            color: black;
+        }
+
+        /* --- TERMINAL SIMULATION STYLES --- */
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px white;
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .glitch {
+            position: relative;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 #fff;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 #fff;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 80px, 0); }
+            20% { clip: rect(60px, 9999px, 10px, 0); }
+            100% { clip: rect(10px, 9999px, 90px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(90px, 9999px, 10px, 0); }
+            20% { clip: rect(10px, 9999px, 50px, 0); }
+            100% { clip: rect(50px, 9999px, 30px, 0); }
+        }
+
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .flash-active {
+            animation: flashBg 0.5s ease-out;
+        }
+        
+        @keyframes flashBg {
+            0% { background-color: white; color: black; }
+            20% { background-color: white; color: black; }
+            100% { background-color: transparent; color: #9ca3af; }
+        }
+
+        /* New Strategy Card Styles */
+        .strategy-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .strategy-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .strategy-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: var(--accent-color, white);
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .strategy-card:hover::before {
+            opacity: 1;
+            box-shadow: 0 0 10px var(--accent-color, white);
+        }
+
+        .tech-corner {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-color: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+        }
+        .tech-corner.tl { top: 0; left: 0; border-top: 1px solid; border-left: 1px solid; }
+        .tech-corner.tr { top: 0; right: 0; border-top: 1px solid; border-right: 1px solid; }
+        .tech-corner.bl { bottom: 0; left: 0; border-bottom: 1px solid; border-left: 1px solid; }
+        .tech-corner.br { bottom: 0; right: 0; border-bottom: 1px solid; border-right: 1px solid; }
+
+        .strategy-card:hover .tech-corner {
+            width: 12px;
+            height: 12px;
+            border-color: white;
+        }
+    </style>
+</head>
+<body class="grid-bg">
+
+    <!-- Custom Cursor -->
+    <div id="cursor"></div>
+    <div class="grain"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 w-full z-50 border-b border-white/20 bg-black transition-all duration-300">
+        <!-- Background Canvas -->
+        <canvas id="navCanvas" class="absolute top-0 left-0 w-full h-full opacity-40 pointer-events-none"></canvas>
+        
+        <!-- Content -->
+        <div class="relative z-10 flex justify-between items-center px-6 py-4">
+            <div class="flex items-center hover-trigger group cursor-pointer">
+                <!-- Logo: Theta in Vault (Brutalist) -->
+                <svg class="w-8 h-8 mr-3 text-white transition-transform group-hover:scale-110 duration-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Outer Vault Shell -->
+                    <path d="M2 2h20v20H2V2z" stroke="currentColor" stroke-width="2"/>
+                    <!-- Inner Geometric Theta -->
+                    <rect x="7" y="7" width="10" height="10" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <div class="text-xl font-bold tracking-tighter mono text-white border border-transparent group-hover:border-white/50 p-1 transition-all">THETA_VAULT</div>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm mono text-white">
+                <a href="#strategies" class="hover:bg-white hover:text-black px-2 py-1 transition-none hover-trigger border border-transparent hover:border-white">STRATEGIES</a>
+                <a href="#fee-structure" class="hover:bg-white hover:text-black px-2 py-1 transition-none hover-trigger border border-transparent hover:border-white">HOW IT WORKS</a>
+                <a href="#advisory" class="hover:bg-white hover:text-black px-2 py-1 transition-none hover-trigger border border-transparent hover:border-white">ADVISORY</a>
+            </div>
+            <a href="#contact" class="border border-white bg-black px-6 py-2 text-xs font-bold tracking-widest text-white hover:bg-white hover:text-black transition-none hover-trigger uppercase">GET IN TOUCH</a>
+        </div>
+        
+        <!-- Brutalist Bottom Border Element -->
+        <div class="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 flex justify-between">
+            <div class="w-2 h-2 bg-white translate-y-[3px]"></div>
+            <div class="w-2 h-2 bg-white translate-y-[3px]"></div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="h-screen flex flex-col justify-center px-6 md:px-12 relative overflow-hidden">
+        <div class="absolute top-1/4 right-0 w-[500px] h-[500px] border border-white/5 rounded-full blur-md"></div>
+        
+        <div class="z-10 max-w-5xl">
+            <div class="mono text-xs md:text-sm text-gray-400 mb-4 fade-in-up delay-100 flex items-center gap-2">
+                <span class="w-2 h-2 bg-white animate-pulse rounded-full"></span> SYSTEM ONLINE
+            </div>
+            <h1 class="text-6xl md:text-9xl font-bold leading-[0.85] uppercase fade-in-up delay-200 glitch" data-text="Architecting Asymmetry.">
+                Architecting <br>
+                <span class="text-white">Asymmetry.</span>
+            </h1>
+            <p class="mt-8 text-xl md:text-2xl text-gray-400 max-w-2xl font-light fade-in-up delay-300 leading-relaxed">
+                We don't gamble on price; we monetize time. <br>
+                Structuring derivatives. Harvesting volatility. Simple stuff. <br>
+                <span class="text-white font-medium block mt-4 text-3xl">Be the house, not the player.</span>
+            </p>
+        </div>
+
+        <div class="absolute bottom-12 left-6 md:left-12">
+            <span class="mono text-xs border border-white/20 px-2 py-1 text-gray-400">SCROLL TO DECRYPT</span>
+        </div>
+
+        <!-- RIGHT SIDE: THETA VAULT ANIMATION -->
+        <div class="absolute top-1/2 right-[8%] -translate-y-1/2 w-[400px] h-[400px] hidden lg:block opacity-80">
+            <canvas id="vaultCanvas" width="400" height="400"></canvas>
+        </div>
+    </header>
+
+    <!-- Ticker Tape -->
+    <div class="ticker-wrap z-20 relative">
+        <div class="ticker mono text-sm text-gray-300">
+             BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++ BTC/USD ARBITRAGE FOUND +++ SHORT VOLATILITY +++ ETH/SOL BRIDGE +++ GAMMA SCALPING +++ VENTURE LIQUIDITY +++
+        </div>
+    </div>
+
+    <!-- TERMINAL SIMULATION DASHBOARD -->
+    <section id="simulation" class="py-24 px-4 md:px-12 border-b border-white/10 bg-black relative">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-8 items-end mb-8">
+            <div class="col-span-2 lg:col-span-1 whitespace-nowrap">
+                <h2 class="text-3xl md:text-5xl font-bold mb-2 glitch" data-text="Active Vectors">Active Vectors</h2>
+                <div class="flex gap-4 text-xs mono text-gray-500">
+                    <span>NET_LATENCY: <span class="text-white">12ms</span></span>
+                    <span>EXEC_STATUS: <span class="text-white">LIVE</span></span>
+                </div>
+            </div>
+            <div class="text-right border-r border-white/10 pr-8">
+                <div class="text-xs mono text-gray-500 mb-1">UNREALIZED PNL</div>
+                <div class="text-2xl md:text-4xl font-bold mono text-white" id="stat-pnl">+128.4%</div>
+            </div>
+            <div class="text-right border-r border-white/10 pr-8">
+                <div class="text-xs mono text-gray-500 mb-1">ALLOCATION %</div>
+                <div class="text-2xl md:text-4xl font-bold mono text-white" id="stat-alloc">94.2%</div>
+            </div>
+            <div class="text-right border-r border-white/10 pr-8">
+                <div class="text-xs mono text-gray-500 mb-1">SHARPE RATIO</div>
+                <div class="text-2xl md:text-4xl font-bold mono text-white" id="stat-sharpe">3.85</div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs mono text-gray-500 mb-1">MAX DRAWDOWN</div>
+                <div class="text-2xl md:text-4xl font-bold mono text-white" id="stat-dd">-4.2%</div>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD CONTAINER -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-px bg-[#222] border border-[#222]">
+            <!-- COL 1: ORDER BOOK -->
+            <div class="lg:col-span-1 bg-black p-4 relative overflow-hidden h-[500px]">
+                <div class="mono text-xs text-gray-500 mb-4 border-b border-gray-800 pb-2 flex justify-between px-2">
+                    <span>BID</span><span>SIZE</span>
+                </div>
+                <div id="order-book-bids" class="space-y-1 font-mono text-xs text-gray-400"></div>
+                <div class="mono text-xs text-gray-500 mt-6 mb-4 border-b border-gray-800 pb-2 flex justify-between px-2">
+                    <span>ASK</span><span>SIZE</span>
+                </div>
+                <div id="order-book-asks" class="space-y-1 font-mono text-xs text-gray-400"></div>
+            </div>
+            <!-- COL 2 & 3: VISUALIZER -->
+            <div class="lg:col-span-2 bg-black relative overflow-hidden h-[500px] flex flex-col">
+                <div class="scan-line"></div>
+                <canvas id="depthCanvas" class="w-full h-full cyber-grid opacity-40 grayscale"></canvas>
+            </div>
+            <!-- COL 4: STATUS (Strategies) -->
+            <div class="lg:col-span-1 bg-black p-4 h-[500px] flex flex-col font-mono text-xs overflow-y-auto">
+                <div class="text-gray-500 mb-4 border-b border-gray-800 pb-2 sticky top-0 bg-black z-10">ACTIVE VECTORS</div>
+                <div class="space-y-4 pb-4" id="daemon-container">
+                    <!-- Dynamic Content Injected via JS -->
+                </div>
+            </div>
+            <!-- COL 5: LOGS -->
+            <div class="lg:col-span-1 bg-black p-4 h-[500px] flex flex-col font-mono text-xs border-l border-gray-800">
+                <div class="text-gray-500 mb-4 border-b border-gray-800 pb-2">SYSTEM LOGS</div>
+                <div id="console-log" class="h-full overflow-hidden text-[10px] text-gray-400 leading-tight flex flex-col-reverse"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STRATEGY TIERS -->
+    <section id="strategies" class="py-24 px-6 md:px-12 border-b border-white/10">
+        <div class="mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold glitch" data-text="Choose Your Allocation Vector">Choose Your Allocation Vector</h2>
+            <p class="mono text-xs text-gray-500 mt-2">SELECT STRATEGY PROTOCOL</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- TIER 1: LOW RISK -->
+            <div class="relative group hover-trigger">
+                <h3 class="text-4xl font-bold mb-6 text-center uppercase leading-tight tracking-tighter">
+                    Low Risk<br>
+                    <span class="text-gray-500">Yield</span>
+                </h3>
+                <div class="mono text-[10px] text-gray-500 mb-8 leading-relaxed text-center max-w-[85%] mx-auto border-t border-white/10 pt-4">
+                    CAPITAL PRESERVATION PROTOCOLS DESIGNED FOR CONSISTENT YIELD GENERATION AND VOLATILITY DAMPENING.
+                </div>
+                <div class="space-y-3 font-mono">
+                    
+                    <!-- Strategy 1 -->
+                    <div>
+                        <a href="strat_low_1.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #10b981;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Peer-to-Peer Stable Lending</h4>
+                                <span class="mono text-[10px] text-emerald-500 border border-emerald-500/30 px-1 bg-emerald-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: LENDING</span>
+                                <span class="text-emerald-400">APY: 12.4%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy 2 -->
+                    <div>
+                        <a href="strat_low_2.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #10b981;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">DeFi Stable Farming</h4>
+                                <span class="mono text-[10px] text-emerald-500 border border-emerald-500/30 px-1 bg-emerald-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: YIELD</span>
+                                <span class="text-emerald-400">APY: 14.8%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy 3 -->
+                    <div>
+                        <a href="strat_low_3.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #3b82f6;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Delta Neutral Futures Arb</h4>
+                                <span class="mono text-[10px] text-blue-500 border border-blue-500/30 px-1 bg-blue-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: ARBITRAGE</span>
+                                <span class="text-blue-400">APY: 18.2%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy 4 -->
+                    <div>
+                        <a href="strat_low_4.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #3b82f6;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Delta Neutral Funding</h4>
+                                <span class="mono text-[10px] text-blue-500 border border-blue-500/30 px-1 bg-blue-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: FUNDING</span>
+                                <span class="text-blue-400">APY: 22.5%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TIER 2: MEDIUM RISK -->
+            <div class="relative group hover-trigger">
+                <h3 class="text-4xl font-bold mb-6 text-center uppercase leading-tight tracking-tighter">
+                    Medium Risk<br>
+                    <span class="text-gray-500">Growth</span>
+                </h3>
+                <div class="mono text-[10px] text-gray-500 mb-8 leading-relaxed text-center max-w-[85%] mx-auto border-t border-white/10 pt-4">
+                    ASYMMETRIC UPSIDE STRATEGIES UTILIZING DEFINED RISK PARAMETERS TO CAPTURE MARKET MOVEMENTS.
+                </div>
+                <div class="space-y-3 font-mono">
+                    <!-- Strategy D -->
+                    <div>
+                        <a href="strat_med_1.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #f59e0b;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Conservative Option Strategy</h4>
+                                <span class="mono text-[10px] text-amber-500 border border-amber-500/30 px-1 bg-amber-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: OPTIONS</span>
+                                <span class="text-amber-400">APY: 28.0%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy E -->
+                    <div>
+                        <a href="strat_med_2.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #8b5cf6;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">NFT Collateralized Lending</h4>
+                                <span class="mono text-[10px] text-violet-500 border border-violet-500/30 px-1 bg-violet-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: LENDING</span>
+                                <span class="text-violet-400">APY: 45.2%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy F -->
+                    <div>
+                        <a href="strat_med_3.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #8b5cf6;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Speculative DeFi Liquidity</h4>
+                                <span class="mono text-[10px] text-violet-500 border border-violet-500/30 px-1 bg-violet-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: LIQUIDITY</span>
+                                <span class="text-violet-400">APY: 62.0%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy G (New Stock Strat) -->
+                    <div>
+                        <a href="strat_stock_val.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #f59e0b;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Value Put Acquisition</h4>
+                                <span class="mono text-[10px] text-amber-500 border border-amber-500/30 px-1 bg-amber-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: EQUITY OPTIONS</span>
+                                <span class="text-amber-400">APY: 18.5%</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TIER 3: HIGH RISK -->
+            <div class="relative group hover-trigger">
+                <h3 class="text-4xl font-bold mb-6 text-center uppercase leading-tight tracking-tighter">
+                    Speculative<br>
+                    <span class="text-gray-500">Alpha</span>
+                </h3>
+                <div class="mono text-[10px] text-gray-500 mb-8 leading-relaxed text-center max-w-[85%] mx-auto border-t border-white/10 pt-4">
+                    HIGH-CONVICTION, BINARY OUTCOME STRATEGIES FOR AGGRESSIVE CAPITAL MULTIPLICATION.
+                </div>
+                <div class="space-y-3 font-mono">
+                    <!-- Strategy X -->
+                    <div>
+                        <a href="strat_high_1.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #ef4444;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Deep Value Directional</h4>
+                                <span class="mono text-[10px] text-red-500 border border-red-500/30 px-1 bg-red-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: LONG</span>
+                                <span class="text-red-400">APY: >110%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy Y -->
+                    <div>
+                        <a href="strat_high_2.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #ef4444;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Aggressive Volatility Shorting</h4>
+                                <span class="mono text-[10px] text-red-500 border border-red-500/30 px-1 bg-red-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: SHORT VOL</span>
+                                <span class="text-red-400">APY: 85.0%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy Z -->
+                    <div>
+                        <a href="strat_high_3.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #ef4444;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Counter Liquidation Snipe</h4>
+                                <span class="mono text-[10px] text-red-500 border border-red-500/30 px-1 bg-red-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: MEV/ARB</span>
+                                <span class="text-red-400">APY: >150%</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Strategy K (New Stock Strat) -->
+                    <div>
+                        <a href="strat_stock_micro.html" class="block strategy-card p-4 cursor-pointer group" style="--accent-color: #ef4444;">
+                            <div class="tech-corner tl"></div><div class="tech-corner tr"></div><div class="tech-corner bl"></div><div class="tech-corner br"></div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-lg tracking-tight font-sans group-hover:text-white transition text-gray-200">Microcap Event Driven</h4>
+                                <span class="mono text-[10px] text-red-500 border border-red-500/30 px-1 bg-red-500/5">● LIVE</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-500">
+                                <span>TYPE: EQUITIES</span>
+                                <span class="text-red-400">APY: >125%</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS / FEES -->
+    <section id="fee-structure" class="py-24 px-6 md:px-12 border-b border-white/10 bg-black relative">
+        <div class="max-w-5xl mx-auto">
+             <div class="mb-20 text-center">
+                <h2 class="text-5xl md:text-7xl font-bold mb-6 uppercase tracking-tighter glitch" data-text="Fee Structure.">
+                    Fee <span class="text-gray-500">Structure.</span>
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- LEFT: ZERO FEES (The Void) - Spans 7 cols -->
+                <div class="lg:col-span-7 bg-[#0a0a0a] border border-white/10 p-8 md:p-10 relative overflow-hidden group hover:border-white/20 transition-colors">
+                    <!-- Tech decoration -->
+                    <div class="absolute top-0 right-0 p-4 opacity-20 mono text-[10px] text-gray-500">PROTOCOL_NULL</div>
+                    <div class="absolute bottom-0 left-0 w-2 h-2 bg-white/20"></div>
+                    <div class="absolute top-0 left-0 w-2 h-2 border-l border-t border-white/20"></div>
+                    
+                    <h3 class="text-2xl font-bold mb-10 text-white flex items-center gap-3">
+                        <span class="text-gray-600 font-mono text-sm">01.</span> Zero Friction
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        <!-- Item -->
+                        <div class="group/item">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2 group-hover/item:border-white/40 transition-colors">
+                                <span class="mono text-xs text-gray-500">MANAGEMENT_FEE</span>
+                                <span class="mono text-xl text-white">0.00%</span>
+                            </div>
+                        </div>
+                        <div class="group/item">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2 group-hover/item:border-white/40 transition-colors">
+                                <span class="mono text-xs text-gray-500">ENTRY_COST</span>
+                                <span class="mono text-xl text-white">0.00%</span>
+                            </div>
+                        </div>
+                        <div class="group/item">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2 group-hover/item:border-white/40 transition-colors">
+                                <span class="mono text-xs text-gray-500">EXIT_COST</span>
+                                <span class="mono text-xl text-white">0.00%</span>
+                            </div>
+                        </div>
+                        <div class="group/item">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-2 group-hover/item:border-white/40 transition-colors">
+                                <span class="mono text-xs text-gray-500">FIXED_FEES</span>
+                                <span class="mono text-xl text-white">0.00%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-10 text-sm text-gray-500 font-light leading-relaxed max-w-lg border-l-2 border-white/10 pl-4">
+                        We have removed all parasitic friction. Capital efficiency is maximized by eliminating drag on the principal.
+                    </div>
+                </div>
+
+                <!-- RIGHT: PERFORMANCE (The Engine) - Spans 5 cols -->
+                <div class="lg:col-span-5 bg-emerald-900/5 border border-emerald-500/20 p-8 md:p-10 relative overflow-hidden flex flex-col justify-between hover:bg-emerald-900/10 transition-colors group">
+                    <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+                    
+                    <!-- Tech Corners -->
+                    <div class="absolute top-0 right-0 w-2 h-2 border-t border-r border-emerald-500/30"></div>
+                    <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500/30"></div>
+                    
+                    <div>
+                        <div class="flex justify-between items-start mb-8">
+                            <h3 class="text-2xl font-bold text-white">
+                                <span class="text-emerald-500/50 font-mono text-sm">02.</span> Performance Only
+                            </h3>
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981] animate-pulse"></div>
+                        </div>
+                        
+                        <p class="text-xl md:text-2xl font-light text-gray-300 italic mb-10 leading-normal">
+                            "You earn, we earn."
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <!-- Metric 1 -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="mono text-[10px] text-emerald-400/70 tracking-widest">SUCCESS_FEE</span>
+                                <span class="mono text-[10px] text-emerald-500/40">VARIABLE_RATE</span>
+                            </div>
+                            <div class="text-5xl font-bold text-white tracking-tight flex items-baseline gap-2">
+                                15% <span class="text-lg text-gray-500 font-normal">STARTING</span>
+                            </div>
+                            <div class="w-full bg-emerald-500/10 h-1 mt-4 overflow-hidden">
+                                <div class="bg-emerald-500 h-full w-[15%] group-hover:w-[30%] transition-all duration-1000 ease-in-out"></div>
+                            </div>
+                        </div>
+
+                        <!-- Metric 2 -->
+                        <div class="pt-6 border-t border-emerald-500/20">
+                            <div class="mono text-[10px] text-emerald-400/70 mb-2 tracking-widest">MINIMUM_CAPITAL</div>
+                            <div class="text-3xl font-bold text-white tracking-tight">$500,000</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ENTREPRENEURIAL ADVISORY -->
+    <section id="advisory" class="py-24 px-6 md:px-12 bg-white/5 relative overflow-hidden">
+        <!-- Background Element -->
+        <div class="absolute top-0 right-0 w-64 h-full border-l border-white/10 cyber-grid opacity-30"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
+            <div class="max-w-2xl">
+                <div class="mono text-xs border border-white/30 inline-block px-3 py-1 mb-6">CONSULTANCY_MODE</div>
+                <h2 class="text-4xl md:text-6xl font-bold mb-6">
+                    Entrepreneurial<br>Advisory.
+                </h2>
+                <p class="text-xl text-gray-300 font-light">
+                    Operational architecture for scaling ventures. We deconstruct business models into liquidity mechanics and unit economics to ensure dominance.
+                </p>
+            </div>
+
+            <div class="flex flex-col items-end">
+                <div class="text-right mb-6">
+                    <div class="mono text-xs text-gray-500 mb-1">RATE_CARD</div>
+                    <div class="text-5xl font-bold grotesk">300 CHF<span class="text-lg text-gray-500 font-normal">/HR</span></div>
+                </div>
+                <a href="mailto:contact@thetavault.com" class="bg-white text-black px-8 py-4 font-bold tracking-widest hover:bg-black hover:text-white hover:border hover:border-white transition duration-300 mono">
+                    INITIATE SESSION
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="min-h-[50vh] flex flex-col justify-between px-6 md:px-12 py-24 relative border-t border-white/10">
+        <div class="max-w-4xl z-10">
+            <h2 class="text-5xl md:text-7xl font-bold leading-none mb-8 hover-trigger glitch" data-text="INITIATE PROTOCOL.">
+                INITIATE<br>PROTOCOL.
+            </h2>
+            <a href="mailto:contact@thetavault.com" class="inline-block border border-white px-8 py-3 text-xs font-bold tracking-widest hover:bg-white hover:text-black transition duration-300 hover-trigger mono">
+                EMAIL THETA_VAULT
+            </a>
+        </div>
+        <div class="flex justify-between items-end mt-24">
+            <div class="mono text-xs text-gray-500">
+                &copy; 2025 THETA_VAULT.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- CUSTOM CURSOR ---
+        const cursor = document.getElementById('cursor');
+        const hoverTriggers = document.querySelectorAll('.hover-trigger');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        hoverTriggers.forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+            trigger.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+        });
+
+        // --- SCROLL ANIMATION ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in-up').forEach((el) => observer.observe(el));
+
+        /* 
+         * ==============================================
+         *  FUTURISTIC TRADING SIMULATION LOGIC
+         * ==============================================
+         */
+
+        // 1. ORDER BOOK SIMULATOR
+        const bidContainer = document.getElementById('order-book-bids');
+        const askContainer = document.getElementById('order-book-asks');
+        let basePrice = 96000; // Default fallback
+
+        // Fetch real BTC price
+        fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
+            .then(res => res.json())
+            .then(data => {
+                if(data.price) {
+                    basePrice = parseFloat(data.price);
+                }
+            })
+            .catch(err => console.log("Price fetch failed, using default"));
+        
+        for(let i=0; i<6; i++) {
+            bidContainer.innerHTML += `<div class="flex justify-between px-2 py-1" id="bid-${i}"><span>---</span><span>--</span></div>`;
+            askContainer.innerHTML += `<div class="flex justify-between px-2 py-1" id="ask-${i}"><span>---</span><span>--</span></div>`;
+        }
+
+        function updateOrderBook() {
+            const isBid = Math.random() > 0.5;
+            const index = Math.floor(Math.random() * 6);
+            const el = document.getElementById(isBid ? `bid-${index}` : `ask-${index}`);
+            // Random walk around base price
+            const price = (basePrice + (Math.random() * 500 * (isBid ? -1 : 1))).toFixed(2);
+            const size = (Math.random() * 2).toFixed(4);
+            
+            // Add action text occasionally
+            let actionText = "";
+            if(Math.random() > 0.7) {
+                const actions = ["FILLED", "PARTIAL", "CANCELED", "NEW"];
+                actionText = `<span class="ml-2 text-[8px] ${isBid ? 'text-green-500' : 'text-red-500'} opacity-70">[${actions[Math.floor(Math.random()*actions.length)]}]</span>`;
+            }
+
+            el.innerHTML = `<span>${price}${actionText}</span><span>${size}</span>`;
+            el.classList.remove('flash-active');
+            void el.offsetWidth;
+            el.classList.add('flash-active');
+            setTimeout(updateOrderBook, Math.random() * 150);
+        }
+        updateOrderBook();
+
+        // 2. DEPTH CHART & PRICE LINE
+        const canvas = document.getElementById('depthCanvas');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+        const bars = 40;
+        let barHeights = new Array(bars).fill(0).map(() => Math.random());
+        
+        // Price Line State
+        let priceHistory = [];
+        let currentPrice = 0.5; // Normalized 0.0 - 1.0
+        let activePopups = [];
+
+        function resizeCanvas() {
+            w = canvas.parentElement.clientWidth;
+            h = canvas.parentElement.clientHeight;
+            canvas.width = w;
+            canvas.height = h;
+            // Start with empty history so line draws from left
+            priceHistory = [];
+            currentPrice = 0.5;
+            activePopups = [];
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawDepth() {
+            ctx.clearRect(0, 0, w, h);
+            
+            // 1. Draw Background Bars
+            const barWidth = w / bars;
+            for(let i=0; i<bars; i++) {
+                barHeights[i] += (Math.random() - 0.5) * 0.1;
+                if(barHeights[i] < 0.1) barHeights[i] = 0.1;
+                if(barHeights[i] > 0.9) barHeights[i] = 0.9;
+                const x = i * barWidth;
+                const height = barHeights[i] * (h * 0.8);
+                const y = h - height;
+                
+                // Mostly grayscale
+                if (Math.random() > 0.98) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; // Rare red flash
+                } else if (Math.random() > 0.98) {
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.5)'; // Rare green flash
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; // Standard white/grey
+                }
+                
+                ctx.fillRect(x, y, barWidth - 2, height);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x, y, barWidth - 2, 2);
+            }
+
+            // 2. Draw Price Line
+            // Update Price - More Drastic Movement
+            currentPrice += (Math.random() - 0.5) * 0.08;
+            // Keep within bounds with simple mean reversion
+            if(currentPrice < 0.1) currentPrice += 0.03;
+            if(currentPrice > 0.9) currentPrice -= 0.03;
+            
+            priceHistory.push(currentPrice);
+            if(priceHistory.length > w) priceHistory.shift();
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            // Draw shadow/glow
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            
+            // Map history to canvas coordinates
+            for(let i = 0; i < priceHistory.length; i++) {
+                const x = i; 
+                // Invert Y because canvas 0 is top
+                const y = (1 - priceHistory[i]) * h; 
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Reset shadow for other elements
+            ctx.shadowBlur = 0;
+
+            // 3. Manage & Draw Popups
+            const now = Date.now();
+            
+            // Filter old (keep for 1500ms)
+            activePopups = activePopups.filter(p => now - p.time < 1500);
+            
+            // Move popups left if chart is scrolling (history full)
+            if(priceHistory.length >= w) {
+                activePopups.forEach(p => p.x--);
+            }
+
+            // Spawn new popup (reduced frequency)
+            if(Math.random() > 0.98) {
+                const stratNames = ["STABLE_LEND", "DELTA_NEUT", "OPT_WHEEL", "NFT_LEND", "DEFI_LIQ", "VAL_PUTS", "MICRO_CAP", "VOL_SHORT", "CNTR_LIQ"];
+                const actions = [
+                    { label: "LONG_ENTRY", color: "#4ade80" },   // Green
+                    { label: "SHORT_FILL", color: "#f87171" },   // Red
+                    { label: "TAKE_PROFIT", color: "#4ade80" },  // Green
+                    { label: "STOP_LOSS", color: "#f87171" },    // Red
+                    { label: "YIELD_HARVEST", color: "#4ade80" },// Green
+                    { label: "RISK_OFF", color: "#f87171" }      // Red
+                ];
+                
+                const strat = stratNames[Math.floor(Math.random() * stratNames.length)];
+                const act = actions[Math.floor(Math.random() * actions.length)];
+                const text = `${strat} :: ${act.label}`;
+                
+                // Spawn at the HEAD of the line (current history length)
+                // Using a slight offset for the text label so it doesn't go off screen
+                let spawnX = priceHistory.length;
+                // If chart is full, head is at w
+                if(priceHistory.length >= w) spawnX = w;
+                
+                // Ensure text fits on screen if near right edge
+                const textWidth = ctx.measureText(text).width;
+                if(spawnX > w - textWidth - 10) spawnX = w - textWidth - 10;
+
+                activePopups.push({
+                    text: text,
+                    color: act.color,
+                    x: spawnX,
+                    y: Math.random() * (h * 0.6) + (h * 0.2), // Keep somewhat central
+                    time: now
+                });
+            }
+
+            // Draw Active Popups
+            activePopups.forEach(p => {
+                ctx.font = "bold 10px 'Space Mono', monospace";
+                ctx.fillStyle = p.color;
+                ctx.fillText(p.text, p.x, p.y);
+                
+                // Draw connecting line to bottom
+                ctx.beginPath();
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = 0.5;
+                ctx.moveTo(p.x, p.y + 4);
+                ctx.lineTo(p.x, h);
+                ctx.stroke();
+            });
+
+            requestAnimationFrame(drawDepth);
+        }
+        drawDepth();
+
+        // 3. CONSOLE
+        const consoleEl = document.getElementById('console-log');
+        const logs = [
+            "STABLE_LENDING: YIELD OPTIMIZED @ 12.4%",
+            "DELTA_NEUTRAL: FUNDING COLLECTED",
+            "OPTION_WHEEL: PUT SOLD [OTM 15%]",
+            "NFT_LENDING: LIQUIDATION AVERTED",
+            "DEFI_LIQUIDITY: RANGE ADJUSTED",
+            "VALUE_PUTS: ENTRY TARGET HIT",
+            "MICROCAP_EVENT: SQUEEZE DETECTED",
+            "VOLATILITY_SHORT: THETA DECAY ACTIVE",
+            "COUNTER_LIQ: ASSET ACQUIRED [-40%]"
+        ];
+
+        function updateConsole() {
+            const msg = logs[Math.floor(Math.random() * logs.length)];
+            const time = new Date().toISOString().split('T')[1].substring(0,8);
+            const div = document.createElement('div');
+            div.className = 'mb-1 border-b border-gray-900 pb-1';
+            div.innerHTML = `<span class="text-gray-600">[${time}]</span> <span class="text-white">>></span> ${msg}`;
+            consoleEl.prepend(div);
+            if(consoleEl.children.length > 15) consoleEl.lastElementChild.remove();
+            setTimeout(updateConsole, Math.random() * 1500 + 500);
+        }
+        updateConsole();
+
+        // 4. ACTIVE DAEMONS SIMULATION
+        const strategies = [
+            { name: "STABLE_LENDING", status: "YIELDING", return: "+12.4%", alloc: "15%", progress: 100, color: "bg-white" },
+            { name: "DEFI_FARMING", status: "COMPOUNDING", return: "+14.8%", alloc: "10%", progress: 92, color: "bg-white" },
+            { name: "FUTURES_ARB", status: "NEUTRAL", return: "+18.2%", alloc: "15%", progress: 88, color: "bg-white" },
+            { name: "FUNDING_DELTA", status: "HARVESTING", return: "+22.5%", alloc: "10%", progress: 75, color: "bg-white" },
+            { name: "OPTION_WHEEL", status: "WAITING", return: "+28.0%", alloc: "15%", progress: 45, color: "bg-white" },
+            { name: "NFT_LENDING", status: "MONITORING", return: "+45.2%", alloc: "5%", progress: 30, color: "bg-white" },
+            { name: "DEFI_LIQUIDITY", status: "IN_RANGE", return: "+62.0%", alloc: "10%", progress: 60, color: "bg-white" },
+            { name: "VALUE_PUTS", status: "SCANNING", return: "+18.5%", alloc: "10%", progress: 20, color: "bg-white" },
+            { name: "MICROCAP_EVENT", status: "IDLE", return: "+125%", alloc: "5%", progress: 5, color: "bg-white" },
+            { name: "VOL_SHORT", status: "EXECUTING", return: "+85.0%", alloc: "5%", progress: 55, color: "bg-white" },
+            { name: "COUNTER_LIQ", status: "SNIPING", return: "+150%", alloc: "5%", progress: 10, color: "bg-white" }
+        ];
+
+        const daemonContainer = document.getElementById('daemon-container');
+        // Clear existing static daemons
+        daemonContainer.innerHTML = '';
+
+        strategies.forEach(strat => {
+            const el = document.createElement('div');
+            el.className = 'group';
+            el.innerHTML = `
+                <div class="flex justify-between text-white mb-1">
+                    <span class="font-bold">${strat.name}</span>
+                    <span class="text-gray-500 text-[10px]">${strat.status}</span>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-gray-400 mb-1">
+                    <span>RTN: <span class="text-white">${strat.return}</span></span>
+                    <span>ALLOC: <span class="text-white">${strat.alloc}</span></span>
+                </div>
+                <div class="w-full bg-gray-900 h-1 relative overflow-hidden">
+                    <div class="h-full ${strat.color} w-0 transition-all duration-1000 ease-out" style="width: ${strat.progress}%"></div>
+                </div>
+            `;
+            daemonContainer.appendChild(el);
+        });
+
+        // 5. LIVE STATS SIMULATION
+        const statPnl = document.getElementById('stat-pnl');
+        const statAlloc = document.getElementById('stat-alloc');
+        const statSharpe = document.getElementById('stat-sharpe');
+        const statDd = document.getElementById('stat-dd');
+
+        // Base values
+        let pnlVal = 128.4;
+        let allocVal = 94.2;
+        let sharpeVal = 3.85;
+        let ddVal = -4.2;
+
+        function updateStats() {
+            // Random walk updates
+            pnlVal += (Math.random() - 0.45) * 0.8; // Stronger movement
+            allocVal += (Math.random() - 0.5) * 1.5;
+            sharpeVal += (Math.random() - 0.5) * 0.05;
+            ddVal += (Math.random() - 0.5) * 0.3;
+
+            // Constraints
+            if(allocVal > 99) allocVal = 99;
+            if(allocVal < 85) allocVal = 85;
+            if(ddVal > 0) ddVal = 0;
+            if(ddVal < -15) ddVal = -15;
+
+            // Update DOM
+            statPnl.innerText = `+${pnlVal.toFixed(1)}%`;
+            statAlloc.innerText = `${allocVal.toFixed(1)}%`;
+            statSharpe.innerText = sharpeVal.toFixed(2);
+            statDd.innerText = `${ddVal.toFixed(1)}%`;
+
+            // Flash effect occasionally
+            if(Math.random() > 0.7) {
+                const target = [statPnl, statAlloc, statSharpe, statDd][Math.floor(Math.random()*4)];
+                target.style.color = '#fff'; // Ensure it flashes white
+                target.style.textShadow = '0 0 10px white'; // Add glow
+                setTimeout(() => {
+                    target.style.color = ''; 
+                    target.style.textShadow = '';
+                }, 100);
+            }
+
+            setTimeout(updateStats, 200); // Faster updates (200ms)
+        }
+        updateStats();
+
+        // 6. NAV BACKGROUND ANIMATION
+        const navCanvas = document.getElementById('navCanvas');
+        const navCtx = navCanvas.getContext('2d');
+        let navW, navH;
+        let navPriceHistory = [];
+        let navCurrentPrice = 0.5;
+        let navFlashIntensity = 0;
+
+        function resizeNavCanvas() {
+            navW = navCanvas.parentElement.clientWidth;
+            navH = navCanvas.parentElement.clientHeight;
+            navCanvas.width = navW;
+            navCanvas.height = navH;
+            navPriceHistory = [];
+            navCurrentPrice = 0.5;
+        }
+        window.addEventListener('resize', resizeNavCanvas);
+        resizeNavCanvas();
+
+        function animateNav() {
+            navCtx.clearRect(0, 0, navW, navH);
+            
+            // Grid Background
+            navCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            navCtx.lineWidth = 1;
+            navCtx.beginPath();
+            for(let i=0; i<navW; i+=40) {
+                navCtx.moveTo(i, 0);
+                navCtx.lineTo(i, navH);
+            }
+            navCtx.stroke();
+
+            // Update Price - More Drastic Movement
+            navCurrentPrice += (Math.random() - 0.5) * 0.08;
+            // Keep within bounds with simple mean reversion
+            if(navCurrentPrice < 0.2) navCurrentPrice += 0.03;
+            if(navCurrentPrice > 0.8) navCurrentPrice -= 0.03;
+            
+            navPriceHistory.push(navCurrentPrice);
+            // Keep full width history
+            if(navPriceHistory.length > navW) navPriceHistory.shift();
+
+            // Draw Line
+            navCtx.beginPath();
+            navCtx.strokeStyle = '#ffffff';
+            navCtx.lineWidth = 1.5;
+            
+            // Map history to canvas coordinates
+            for(let i = 0; i < navPriceHistory.length; i++) {
+                const x = i + (navW - navPriceHistory.length); // Align to right
+                const y = (1 - navPriceHistory[i]) * navH; 
+                if(i === 0) navCtx.moveTo(x, y);
+                else navCtx.lineTo(x, y);
+            }
+            navCtx.stroke();
+
+            // Scanline (Bright Light)
+            const time = Date.now() * 0.002;
+            const scanY = (Math.sin(time) * 0.5 + 0.5) * navH;
+            
+            // Glow effect for scanline
+            navCtx.shadowBlur = 15;
+            navCtx.shadowColor = "rgba(255, 255, 255, 0.8)";
+            navCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            navCtx.fillRect(0, scanY, navW, 1);
+            navCtx.shadowBlur = 0; // Reset shadow
+
+            // Flash Event Logic
+            // Trigger flash occasionally when "something happened"
+            if(Math.random() > 0.98) {
+                navFlashIntensity = 1;
+            }
+
+            // Draw Flash
+            if(navFlashIntensity > 0.01) {
+                navCtx.fillStyle = `rgba(255, 255, 255, ${navFlashIntensity * 0.15})`;
+                navCtx.fillRect(0, 0, navW, navH);
+                // Decay
+                navFlashIntensity *= 0.9;
+            } else {
+                navFlashIntensity = 0;
+            }
+
+            requestAnimationFrame(animateNav);
+        }
+        animateNav();
+
+        /*
+         * ==============================================
+         *  7. THETA VAULT HERO ANIMATION
+         * ==============================================
+         */
+        const vaultCanvas = document.getElementById('vaultCanvas');
+        // Only run if element exists (desktop only)
+        if(vaultCanvas) {
+            const vCtx = vaultCanvas.getContext('2d');
+            const vW = vaultCanvas.width;
+            const vH = vaultCanvas.height;
+            const centerX = vW / 2;
+            const centerY = vH / 2;
+
+            let particles = [];
+            let angle = 0;
+
+            // Particle Class
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = (Math.random() - 0.5) * vW;
+                    this.y = (Math.random() - 0.5) * vH;
+                    this.z = Math.random() * vW;
+                    this.char = Math.random() > 0.5 ? "1" : "0";
+                    if(Math.random() > 0.9) this.char = Math.floor(Math.random()*9).toString();
+                }
+                update() {
+                    this.z -= 2; // Move towards screen
+                    if(this.z <= 0) this.reset();
+                }
+                draw() {
+                    const scale = 200 / (200 + this.z);
+                    const x2d = centerX + this.x * scale;
+                    const y2d = centerY + this.y * scale;
+                    
+                    if(x2d > 0 && x2d < vW && y2d > 0 && y2d < vH) {
+                        const alpha = (1 - this.z / vW);
+                        vCtx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                        vCtx.font = `${10 * scale}px 'Space Mono'`;
+                        vCtx.fillText(this.char, x2d, y2d);
+                    }
+                }
+            }
+
+            // Initialize Particles
+            for(let i=0; i<150; i++) particles.push(new Particle());
+
+            function animateVault() {
+                vCtx.clearRect(0, 0, vW, vH);
+                
+                // Background Particles (Data Stream) - ONLY NUMBERS
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                requestAnimationFrame(animateVault);
+            }
+            animateVault();
+        }
+    </script>
+</body>
+</html>

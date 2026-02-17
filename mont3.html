@@ -29,9 +29,18 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             text-align: center;
             letter-spacing: 0.02em;
+            padding: 2rem;
+            padding-bottom: 15vh;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         #cursor-canvas {
@@ -82,9 +91,10 @@
             margin-top: 4rem;
             opacity: 0;
             animation: fadeIn 0.8s ease 0.4s forwards;
+            position: relative;
         }
 
-        .cta a {
+        .cta-trigger {
             display: inline-block;
             padding: 1.2rem 3.5rem;
             background: #fff;
@@ -94,13 +104,85 @@
             text-transform: uppercase;
             letter-spacing: 0.2em;
             transition: all 0.15s ease;
+            cursor: none;
+            position: relative;
+            z-index: 10;
         }
 
-        .cta a:hover {
+        .cta-trigger:hover {
             background: transparent;
             color: #fff;
             outline: 2px solid #fff;
             outline-offset: -2px;
+        }
+
+        .cta-options {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            gap: 6rem;
+            padding-top: 2.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            width: max-content;
+        }
+
+        .cta-options.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .popup-message {
+            position: absolute;
+            top: -2rem;
+            right: -12rem;
+            transform: rotate(3deg);
+            color: #fff;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 10001;
+            pointer-events: none;
+            display: none;
+            white-space: nowrap;
+        }
+
+        .popup-message.show {
+            display: block;
+        }
+
+        .cta-option {
+            text-align: center;
+        }
+
+        .cta-option a {
+            display: block;
+            padding: 0.5rem 0;
+            color: #fff;
+            text-decoration: none;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            cursor: none;
+        }
+
+        .cta-option a:hover {
+            opacity: 0.6;
+        }
+
+        .cta-option p {
+            margin-top: 0.6rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 0.05em;
+            max-width: 200px;
         }
 
         @keyframes fadeIn {
@@ -144,28 +226,63 @@
         }
 
         @media (max-width: 600px) {
+            body {
+                padding-bottom: 10vh;
+            }
             .logo {
                 top: 1rem;
                 right: 1rem;
                 width: clamp(60px, 20vw, 100px);
             }
-            .cta {
-                margin-top: 3rem;
+            .headline {
+                font-size: clamp(2rem, 10vw, 4rem);
             }
-            .cta a {
-                padding: 1rem 2.5rem;
+            .cta {
+                margin-top: 2.5rem;
+            }
+            .cta-trigger {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            .cta-options {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding-top: 2rem;
+            }
+            .cta-option a {
+                font-size: 1.5rem;
+            }
+            .cta-option p {
+                max-width: 200px;
+                font-size: 0.65rem;
+            }
+            .popup-message {
+                top: -1.5rem;
+                right: -6rem;
+                font-size: 0.7rem;
             }
         }
     </style>
 </head>
 <body>
     <img src="image.png" alt="Logo" class="logo">
-    <h1 class="headline">
-        <span>We bring <span class="glitch">AI</span></span>
-        <span>into your company</span>
-    </h1>
-    <div class="cta">
-        <a href="https://wa.me/393400755017?text=I%20want%20to%20start%20today" target="_blank">Start Today</a>
+    <div class="main-content">
+        <h1 class="headline">
+            <span>We bring <span class="glitch">AI</span></span>
+            <span>into your company</span>
+        </h1>
+        <div class="cta">
+        <div class="cta-trigger" id="cta-trigger">Click here to know how</div>
+        <div class="popup-message" id="popup-message"></div>
+        <div class="cta-options" id="cta-options">
+            <div class="cta-option">
+                <a href="workshops.html">Custom Workshops</a>
+            </div>
+            <div class="cta-option">
+                <a href="tools.html">Tools Creation</a>
+            </div>
+        </div>
+    </div>
     </div>
     
     <canvas id="cursor-canvas"></canvas>
@@ -221,7 +338,7 @@
                 // Glow
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size * this.life * 2, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.life * 0.4})`;
                 ctx.fill();
             }
         }
@@ -272,7 +389,7 @@
                 ctx.stroke();
                 
                 // Glow
-                ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.4})`;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.5})`;
                 ctx.lineWidth = this.life * 10;
                 ctx.stroke();
             }
@@ -377,9 +494,9 @@
                             ctx.beginPath();
                             ctx.moveTo(p1.x, p1.y);
                             ctx.lineTo(p2.x, p2.y);
-                            const alpha = (1 - dist / 80) * 0.5 * p1.life * p2.life;
+                            const alpha = (1 - dist / 80) * 0.6 * p1.life * p2.life;
                             ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-                            ctx.lineWidth = 1.5;
+                            ctx.lineWidth = 2;
                             ctx.stroke();
                         }
                     }
@@ -392,6 +509,59 @@
         }
         
         animate();
+        
+        // Click handler for CTA
+        const ctaTrigger = document.getElementById('cta-trigger');
+        const ctaOptions = document.getElementById('cta-options');
+        const popupMessage = document.getElementById('popup-message');
+        let clickCount = 0;
+        let optionsShown = false;
+        
+        const messages = [
+            "",
+            "...",
+            "I received your click",
+            "Don't be impatient",
+            "You really want to know uh?",
+            "Ok, there you go"
+        ];
+        
+        const afterMessages = [
+            "Pls stop clicking",
+            "No more surprises available",
+            "Seriously, that's it",
+            "You're persistent, I like that",
+            "Still nothing here",
+            "Ok now it's just weird",
+            "...",
+            "Fine, keep clicking",
+            "I have all day"
+        ];
+        
+        ctaTrigger.addEventListener('click', () => {
+            clickCount++;
+            
+            if (clickCount >= 1 && clickCount <= 5) {
+                popupMessage.classList.remove('show');
+                popupMessage.textContent = messages[clickCount];
+                setTimeout(() => popupMessage.classList.add('show'), 10);
+            }
+            
+            if (clickCount === 5) {
+                setTimeout(() => {
+                    popupMessage.classList.remove('show');
+                    ctaOptions.classList.add('show');
+                    optionsShown = true;
+                }, 1500);
+            }
+            
+            if (clickCount > 5 && optionsShown) {
+                popupMessage.classList.remove('show');
+                const msgIndex = (clickCount - 6) % afterMessages.length;
+                popupMessage.textContent = afterMessages[msgIndex];
+                setTimeout(() => popupMessage.classList.add('show'), 10);
+            }
+        });
     </script>
 </body>
 </html>
